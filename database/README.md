@@ -94,6 +94,6 @@ Top20 query:
 ```sql
 SELECT *
 FROM public_recipes
-ORDER BY hot_score DESC, average_rating DESC, id DESC
+ORDER BY hot_score DESC, average_rating DESC, rating_count DESC, id DESC
 LIMIT 20;
 ```

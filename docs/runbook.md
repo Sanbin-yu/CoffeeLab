@@ -52,18 +52,26 @@ mvn -DskipTests package
 
 ## 初始化数据库
 
-从项目根目录执行：
+后端默认连接名为 `coffeelab` 的数据库。新机器第一次联调时，先在 MySQL CLI 中创建数据库：
+
+```sql
+CREATE DATABASE IF NOT EXISTS coffeelab CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+USE coffeelab;
+```
+
+然后从项目根目录导入脚本。Windows PowerShell 不支持 Bash 风格的 `<` 输入重定向，建议通过 `cmd /c` 执行：
 
 ```powershell
-mysql -u <user> -p <database_name> < database/schema.sql
-mysql -u <user> -p <database_name> < database/seed.sql
+cmd /c "mysql -u <user> -p coffeelab < database\schema.sql"
+cmd /c "mysql -u <user> -p coffeelab < database\seed.sql"
 ```
 
 或在 MySQL CLI 中执行：
 
 ```sql
-SOURCE database/schema.sql;
-SOURCE database/seed.sql;
+USE coffeelab;
+SOURCE E:/OnlyTest/CoffeeLab/database/schema.sql;
+SOURCE E:/OnlyTest/CoffeeLab/database/seed.sql;
 ```
 
 ## 常见问题
