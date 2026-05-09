@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffeelab.backend.mapper.RecipeMapper">
+    <resultMap id="RecipeResultMap" type="com.coffeelab.backend.model.Recipe">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="name" property="name"/>
+        <result column="note" property="note"/>
+        <result column="cup_type" property="cupType"/>
+        <result column="temperature_type" property="temperatureType"/>
+        <result column="coffee_base" property="coffeeBase"/>
+        <result column="espresso_shots" property="espressoShots"/>
+        <result column="milk_type" property="milkType"/>
+        <result column="sweetness" property="sweetness"/>
+        <result column="ice_level" property="iceLevel"/>
+        <result column="syrups" property="syrups" typeHandler="com.coffeelab.backend.mybatis.StringListTypeHandler"/>
+        <result column="foam" property="foam"/>
+        <result column="toppings" property="toppings" typeHandler="com.coffeelab.backend.mybatis.StringListTypeHandler"/>
+        <result column="flavor_tags" property="flavorTags" typeHandler="com.coffeelab.backend.mybatis.StringListTypeHandler"/>
+        <result column="flavor_radar" property="flavorRadar" typeHandler="com.coffeelab.backend.mybatis.FlavorRadarTypeHandler"/>
+        <result column="is_public" property="isPublic"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <resultMap id="ClassicCoffeeResultMap" type="com.coffeelab.backend.model.ClassicCoffee">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="description" property="description"/>
+        <result column="caffeine_level" property="caffeineLevel"/>
+        <result column="suitable_crowd" property="suitableCrowd"/>
+        <result column="tags" property="tags" typeHandler="com.coffeelab.backend.mybatis.StringListTypeHandler"/>
+        <result column="default_recipe" property="defaultRecipe" typeHandler="com.coffeelab.backend.mybatis.RecipeJsonTypeHandler"/>
+        <result column="adjustable" property="adjustable"/>
+    </resultMap>
+
+    <sql id="RecipeColumns">
+        id, user_id, name, note, cup_type, temperature_type, coffee_base, espresso_shots,
+        milk_type, sweetness, ice_level, syrups, foam, toppings, flavor_tags, flavor_radar,
+        is_public, created_at, updated_at
+    </sql>
+
+    <select id="selectClassicCoffees" resultMap="ClassicCoffeeResultMap">
+        SELECT id, name, image_url, description, caffeine_level, suitable_crowd, tags,
+               default_recipe, adjustable
+        FROM classic_coffees
+        ORDER BY sort_order ASC, id ASC
+    </select>
+
+    <select id="selectClassicCoffeeById" resultMap="ClassicCoffeeResultMap">
+        SELECT id, name, image_url, description, caffeine_level, suitable_crowd, tags,
+               default_recipe, adjustable
+        FROM classic_coffees
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectById" resultMap="RecipeResultMap">
+        SELECT <include refid="RecipeColumns"/>
+        FROM recipes
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByUser" resultMap="RecipeResultMap">
+        SELECT <include refid="RecipeColumns"/>
+        FROM recipes
+        WHERE user_id = #{userId}
+        <if test="keyword != null and keyword != ''">
+            AND name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        <if test="tag != null and tag != ''">
+            AND JSON_CONTAINS(flavor_tags, JSON_QUOTE(#{tag}))
+        </if>
+        ORDER BY updated_at DESC, id DESC
+    </select>
+
+    <insert id="insert" parameterType="com.coffeelab.backend.model.Recipe" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO recipes (
+            user_id, name, note, cup_type, temperature_type, coffee_base, espresso_shots,
+            milk_type, sweetness, ice_level, syrups, foam, toppings, flavor_tags, flavor_radar,
+            is_public, created_at, updated_at
+        )
+        VALUES (
+            #{userId}, #{name}, #{note}, #{cupType}, #{temperatureType}, #{coffeeBase}, #{espressoShots},
+            #{milkType}, #{sweetness}, #{iceLevel},
+            #{syrups,typeHandler=com.coffeelab.backend.mybatis.StringListTypeHandler},
+            #{foam},
+            #{toppings,typeHandler=com.coffeelab.backend.mybatis.StringListTypeHandler},
+            #{flavorTags,typeHandler=com.coffeelab.backend.mybatis.StringListTypeHandler},
+            #{flavorRadar,typeHandler=com.coffeelab.backend.mybatis.FlavorRadarTypeHandler},
+            #{isPublic}, NOW(), NOW()
+        )
+    </insert>
+
+    <update id="update" parameterType="com.coffeelab.backend.model.Recipe">
+        UPDATE recipes
+        SET name = #{name},
+            note = #{note},
+            cup_type = #{cupType},
+            temperature_type = #{temperatureType},
+            coffee_base = #{coffeeBase},
+            espresso_shots = #{espressoShots},
+            milk_type = #{milkType},
+            sweetness = #{sweetness},
+            ice_level = #{iceLevel},
+            syrups = #{syrups,typeHandler=com.coffeelab.backend.mybatis.StringListTypeHandler},
+            foam = #{foam},
+            toppings = #{toppings,typeHandler=com.coffeelab.backend.mybatis.StringListTypeHandler},
+            flavor_tags = #{flavorTags,typeHandler=com.coffeelab.backend.mybatis.StringListTypeHandler},
+            flavor_radar = #{flavorRadar,typeHandler=com.coffeelab.backend.mybatis.FlavorRadarTypeHandler},
+            is_public = #{isPublic},
+            updated_at = NOW()
+        WHERE id = #{id} AND user_id = #{userId}
+    </update>
+
+    <delete id="deleteByIdAndUser">
+        DELETE FROM recipes
+        WHERE id = #{id} AND user_id = #{userId}
+    </delete>
+
+    <update id="updatePublicState">
+        UPDATE recipes
+        SET is_public = #{isPublic}, updated_at = NOW()
+        WHERE id = #{id} AND user_id = #{userId}
+    </update>
+</mapper>

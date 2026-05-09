@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffeelab.backend.mapper.PublicRecipeMapper">
+    <resultMap id="PublicRecipeResultMap" type="com.coffeelab.backend.model.PublicRecipe">
+        <id column="id" property="id"/>
+        <result column="recipe_id" property="recipeId"/>
+        <result column="user_id" property="userId"/>
+        <result column="average_rating" property="averageRating"/>
+        <result column="rating_count" property="ratingCount"/>
+        <result column="tried_count" property="triedCount"/>
+        <result column="favorite_count" property="favoriteCount"/>
+        <result column="fork_count" property="forkCount"/>
+        <result column="hot_score" property="hotScore"/>
+        <result column="published_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <resultMap id="RecipeRatingResultMap" type="com.coffeelab.backend.model.RecipeRating">
+        <id column="id" property="id"/>
+        <result column="public_recipe_id" property="publicRecipeId"/>
+        <result column="user_id" property="userId"/>
+        <result column="score" property="score"/>
+        <result column="comment" property="comment"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <resultMap id="PublicRecipeViewResultMap" type="com.coffeelab.backend.vo.PublicRecipeVO">
+        <constructor>
+            <arg column="id" javaType="java.lang.Long"/>
+            <arg column="recipe_id" javaType="java.lang.Long"/>
+            <arg column="name" javaType="java.lang.String"/>
+            <arg column="note" javaType="java.lang.String"/>
+            <arg column="author_id" javaType="java.lang.Long"/>
+            <arg column="author_name" javaType="java.lang.String"/>
+            <arg column="cup_type" javaType="java.lang.String"/>
+            <arg column="temperature_type" javaType="java.lang.String"/>
+            <arg column="coffee_base" javaType="java.lang.String"/>
+            <arg column="espresso_shots" javaType="java.lang.Integer"/>
+            <arg column="milk_type" javaType="java.lang.String"/>
+            <arg column="sweetness" javaType="java.lang.String"/>
+            <arg column="ice_level" javaType="java.lang.String"/>
+            <arg column="syrups" javaType="java.util.List" typeHandler="com.coffeelab.backend.mybatis.StringListTypeHandler"/>
+            <arg column="foam" javaType="java.lang.String"/>
+            <arg column="toppings" javaType="java.util.List" typeHandler="com.coffeelab.backend.mybatis.StringListTypeHandler"/>
+            <arg column="flavor_tags" javaType="java.util.List" typeHandler="com.coffeelab.backend.mybatis.StringListTypeHandler"/>
+            <arg column="flavor_radar" javaType="com.coffeelab.backend.model.FlavorRadar" typeHandler="com.coffeelab.backend.mybatis.FlavorRadarTypeHandler"/>
+            <arg column="average_rating" javaType="double"/>
+            <arg column="rating_count" javaType="int"/>
+            <arg column="tried_count" javaType="int"/>
+            <arg column="favorite_count" javaType="int"/>
+            <arg column="fork_count" javaType="int"/>
+            <arg column="hot_score" javaType="double"/>
+            <arg column="published_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <sql id="PublicRecipeColumns">
+        id, recipe_id, user_id, average_rating, rating_count, tried_count, favorite_count,
+        fork_count, hot_score, published_at, updated_at
+    </sql>
+
+    <sql id="PublicRecipeViewColumns">
+        pr.id, pr.recipe_id, r.name, r.note, u.id AS author_id, u.nickname AS author_name,
+        r.cup_type, r.temperature_type, r.coffee_base, r.espresso_shots, r.milk_type,
+        r.sweetness, r.ice_level, r.syrups, r.foam, r.toppings, r.flavor_tags, r.flavor_radar,
+        pr.average_rating, pr.rating_count, pr.tried_count, pr.favorite_count, pr.fork_count,
+        pr.hot_score, pr.published_at
+    </sql>
+
+    <select id="selectById" resultMap="PublicRecipeResultMap">
+        SELECT <include refid="PublicRecipeColumns"/>
+        FROM public_recipes
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByRecipeId" resultMap="PublicRecipeResultMap">
+        SELECT <include refid="PublicRecipeColumns"/>
+        FROM public_recipes
+        WHERE recipe_id = #{recipeId}
+    </select>
+
+    <select id="selectPublicRecipeViews" resultMap="PublicRecipeViewResultMap">
+        SELECT <include refid="PublicRecipeViewColumns"/>
+        FROM public_recipes pr
+        INNER JOIN recipes r ON r.id = pr.recipe_id
+        INNER JOIN users u ON u.id = pr.user_id
+        WHERE 1 = 1
+        <if test="keyword != null and keyword != ''">
+            AND r.name LIKE CONCAT('%', #{keyword}, '%')
+        </if>
+        <if test="tag != null and tag != ''">
+            AND JSON_CONTAINS(r.flavor_tags, JSON_QUOTE(#{tag}))
+        </if>
+        <choose>
+            <when test="sort == 'rating'">
+                ORDER BY pr.average_rating DESC, pr.rating_count DESC, pr.id DESC
+            </when>
+            <when test="sort == 'tried'">
+                ORDER BY pr.tried_count DESC, pr.id DESC
+            </when>
+            <when test="sort == 'favorite'">
+                ORDER BY pr.favorite_count DESC, pr.id DESC
+            </when>
+            <when test="sort == 'hot'">
+                ORDER BY pr.hot_score DESC, pr.average_rating DESC, pr.id DESC
+            </when>
+            <otherwise>
+                ORDER BY pr.published_at DESC, pr.id DESC
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="selectPublicRecipeViewById" resultMap="PublicRecipeViewResultMap">
+        SELECT <include refid="PublicRecipeViewColumns"/>
+        FROM public_recipes pr
+        INNER JOIN recipes r ON r.id = pr.recipe_id
+        INNER JOIN users u ON u.id = pr.user_id
+        WHERE pr.id = #{id}
+    </select>
+
+    <select id="selectTopPublicRecipes" resultMap="PublicRecipeResultMap">
+        SELECT <include refid="PublicRecipeColumns"/>
+        FROM public_recipes
+        ORDER BY hot_score DESC, average_rating DESC, rating_count DESC, id DESC
+        LIMIT 20
+    </select>
+
+    <insert id="insert" parameterType="com.coffeelab.backend.model.PublicRecipe" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO public_recipes (recipe_id, user_id, average_rating, rating_count, tried_count, favorite_count, fork_count, hot_score, published_at, updated_at)
+        VALUES (#{recipeId}, #{userId}, 0, 0, 0, 0, 0, 0, NOW(), NOW())
+    </insert>
+
+    <delete id="deleteByRecipeIdAndUser">
+        DELETE FROM public_recipes
+        WHERE recipe_id = #{recipeId} AND user_id = #{userId}
+    </delete>
+
+    <insert id="upsertRating" parameterType="com.coffeelab.backend.model.RecipeRating" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO recipe_ratings (public_recipe_id, user_id, score, comment, created_at, updated_at)
+        VALUES (#{publicRecipeId}, #{userId}, #{score}, #{comment}, NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+            score = VALUES(score),
+            comment = VALUES(comment),
+            updated_at = NOW()
+    </insert>
+
+    <select id="selectRatings" resultMap="RecipeRatingResultMap">
+        SELECT id, public_recipe_id, user_id, score, comment, created_at, updated_at
+        FROM recipe_ratings
+        WHERE public_recipe_id = #{publicRecipeId}
+    </select>
+
+    <select id="selectRatingByUser" resultMap="RecipeRatingResultMap">
+        SELECT id, public_recipe_id, user_id, score, comment, created_at, updated_at
+        FROM recipe_ratings
+        WHERE public_recipe_id = #{publicRecipeId} AND user_id = #{userId}
+    </select>
+
+    <select id="selectRatingDistribution" resultType="com.coffeelab.backend.vo.RatingBucketVO">
+        SELECT score, COUNT(*) AS count
+        FROM recipe_ratings
+        WHERE public_recipe_id = #{publicRecipeId}
+        GROUP BY score
+        ORDER BY score
+    </select>
+
+    <insert id="insertTryRecord">
+        INSERT IGNORE INTO recipe_try_records (public_recipe_id, user_id, created_at)
+        VALUES (#{publicRecipeId}, #{userId}, NOW())
+    </insert>
+
+    <insert id="insertFavorite">
+        INSERT IGNORE INTO recipe_favorites (public_recipe_id, user_id, created_at)
+        VALUES (#{publicRecipeId}, #{userId}, NOW())
+    </insert>
+
+    <delete id="deleteFavorite">
+        DELETE FROM recipe_favorites
+        WHERE public_recipe_id = #{publicRecipeId} AND user_id = #{userId}
+    </delete>
+
+    <insert id="insertForkRecord">
+        INSERT INTO recipe_fork_records (public_recipe_id, user_id, source_recipe_id, forked_recipe_id, created_at)
+        VALUES (#{publicRecipeId}, #{userId}, #{sourceRecipeId}, #{forkedRecipeId}, NOW())
+    </insert>
+
+    <update id="recalculateStats">
+        UPDATE public_recipes pr
+        SET average_rating = COALESCE((
+                SELECT ROUND(AVG(score), 1)
+                FROM recipe_ratings
+                WHERE public_recipe_id = #{publicRecipeId}
+            ), 0),
+            rating_count = (
+                SELECT COUNT(*)
+                FROM recipe_ratings
+                WHERE public_recipe_id = #{publicRecipeId}
+            ),
+            tried_count = (
+                SELECT COUNT(*)
+                FROM recipe_try_records
+                WHERE public_recipe_id = #{publicRecipeId}
+            ),
+            favorite_count = (
+                SELECT COUNT(*)
+                FROM recipe_favorites
+                WHERE public_recipe_id = #{publicRecipeId}
+            ),
+            hot_score = (
+                COALESCE((SELECT ROUND(AVG(score), 1) FROM recipe_ratings WHERE public_recipe_id = #{publicRecipeId}), 0) * 40
+                + (SELECT COUNT(*) FROM recipe_ratings WHERE public_recipe_id = #{publicRecipeId}) * 2
+                + (SELECT COUNT(*) FROM recipe_try_records WHERE public_recipe_id = #{publicRecipeId}) * 1.5
+                + (SELECT COUNT(*) FROM recipe_favorites WHERE public_recipe_id = #{publicRecipeId}) * 2
+                + pr.fork_count * 2
+            ),
+            updated_at = NOW()
+        WHERE pr.id = #{publicRecipeId}
+    </update>
+
+    <update id="incrementForkCount">
+        UPDATE public_recipes
+        SET fork_count = fork_count + 1,
+            hot_score = hot_score + 2,
+            updated_at = NOW()
+        WHERE id = #{publicRecipeId}
+    </update>
+</mapper>

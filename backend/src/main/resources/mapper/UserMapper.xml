@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.coffeelab.backend.mapper.UserMapper">
+    <resultMap id="UserResultMap" type="com.coffeelab.backend.model.User">
+        <id column="id" property="id"/>
+        <result column="nickname" property="nickname"/>
+        <result column="phone" property="phone"/>
+        <result column="email" property="email"/>
+        <result column="password_hash" property="passwordHash"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="selectById" resultType="com.coffeelab.backend.model.User">
+        SELECT id, nickname, phone, email, password_hash AS passwordHash, avatar_url AS avatarUrl,
+               created_at AS createdAt, updated_at AS updatedAt
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectByAccount" resultMap="UserResultMap">
+        SELECT id, nickname, phone, email, password_hash, avatar_url, created_at, updated_at
+        FROM users
+        WHERE phone = #{account} OR email = #{account}
+        LIMIT 1
+    </select>
+
+    <select id="countByContact" resultType="int">
+        SELECT COUNT(*)
+        FROM users
+        WHERE
+        <trim prefixOverrides="OR">
+            <if test="phone != null and phone != ''">
+                OR phone = #{phone}
+            </if>
+            <if test="email != null and email != ''">
+                OR email = #{email}
+            </if>
+        </trim>
+    </select>
+
+    <insert id="insert" parameterType="com.coffeelab.backend.model.User" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO users (nickname, phone, email, password_hash, avatar_url, created_at, updated_at)
+        VALUES (#{nickname}, #{phone}, #{email}, #{passwordHash}, #{avatarUrl}, NOW(), NOW())
+    </insert>
+
+    <update id="updateProfile" parameterType="com.coffeelab.backend.model.User">
+        UPDATE users
+        SET nickname = #{nickname},
+            avatar_url = #{avatarUrl},
+            updated_at = NOW()
+        WHERE id = #{id}
+    </update>
+</mapper>
