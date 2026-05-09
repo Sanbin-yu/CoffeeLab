@@ -783,7 +783,11 @@
   "code": 200,
   "message": "success",
   "data": {
-    "triedCount": 119
+    "triedCount": 119,
+    "favoriteCount": null,
+    "forkCount": null,
+    "recipeId": null,
+    "publicRecipeId": null
   }
 }
 ```
@@ -801,7 +805,11 @@
   "code": 200,
   "message": "success",
   "data": {
-    "favoriteCount": 37
+    "triedCount": null,
+    "favoriteCount": 37,
+    "forkCount": null,
+    "recipeId": null,
+    "publicRecipeId": null
   }
 }
 ```
@@ -819,7 +827,11 @@
   "code": 200,
   "message": "success",
   "data": {
-    "favoriteCount": 36
+    "triedCount": null,
+    "favoriteCount": 36,
+    "forkCount": null,
+    "recipeId": null,
+    "publicRecipeId": null
   }
 }
 ```
